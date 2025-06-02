@@ -1,0 +1,359 @@
+<!-- public/index.html - 前端页面 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IP信息查询与健康评估</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#2563eb',
+            secondary: '#4f46e5',
+            success: '#16a34a',
+            danger: '#dc2626',
+            warning: '#f59e0b',
+            info: '#0ea5e9',
+            light: '#f8fafc',
+            dark: '#1e293b'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .card-shadow {
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+      }
+      .input-focus {
+        @apply focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none;
+      }
+      .btn-hover {
+        @apply hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-light to-blue-50 min-h-screen font-sans text-dark">
+  <div class="container mx-auto px-4 py-8 max-w-3xl">
+    <!-- 头部 -->
+    <header class="text-center mb-8">
+      <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary mb-2">
+        IP信息查询与健康评估
+      </h1>
+      <p class="text-gray-600 text-lg">获取详细的IP地理位置和网络环境信息，评估网络安全风险</p>
+    </header>
+    
+    <!-- 主卡片 -->
+    <div class="bg-white rounded-2xl card-shadow overflow-hidden">
+      <!-- 输入区域 -->
+      <div class="p-6 md:p-8">
+        <div class="mb-6">
+          <label for="ipInput" class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fa fa-globe mr-2"></i>IP地址查询
+          </label>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input 
+              id="ipInput" 
+              type="text" 
+              placeholder="输入IP地址（留空查询本机IP）" 
+              class="flex-1 px-4 py-3 rounded-lg border border-gray-300 input-focus"
+            >
+            <button 
+              id="checkBtn" 
+              class="px-6 py-3 bg-primary text-white rounded-lg font-medium btn-hover flex items-center justify-center"
+            >
+              <i class="fa fa-search mr-2"></i>查询
+            </button>
+          </div>
+          <p id="error" class="mt-2 text-danger text-sm hidden"></p>
+        </div>
+        
+        <!-- 加载指示器 -->
+        <div id="loading" class="py-8 text-center hidden">
+          <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+          <p class="text-gray-600">正在查询IP信息，请稍候...</p>
+        </div>
+        
+        <!-- 结果区域 -->
+        <div id="result" class="mt-8 hidden">
+          <!-- IP信息卡片 -->
+          <div class="bg-gray-50 rounded-xl p-5 mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+              <i class="fa fa-info-circle text-primary mr-2"></i>IP信息详情
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-3">
+                <div class="flex items-start">
+                  <span class="text-gray-500 w-24">IP地址:</span>
+                  <span id="ip" class="font-medium"></span>
+                </div>
+                <div class="flex items-start">
+                  <span class="text-gray-500 w-24">位置:</span>
+                  <span id="location" class="font-medium"></span>
+                </div>
+                <div class="flex items-start">
+                  <span class="text-gray-500 w-24">ASN:</span>
+                  <span id="asn" class="font-medium"></span>
+                </div>
+              </div>
+              <div class="space-y-3">
+                <div class="flex items-start">
+                  <span class="text-gray-500 w-24">ISP:</span>
+                  <span id="isp" class="font-medium"></span>
+                </div>
+                <div class="flex items-start">
+                  <span class="text-gray-500 w-24">代理/VPN:</span>
+                  <span id="proxy" class="font-medium"></span>
+                </div>
+                <div class="flex items-start">
+                  <span class="text-gray-500 w-24">用户代理:</span>
+                  <span id="userAgent" class="font-medium text-sm"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 健康评估卡片 -->
+          <div class="rounded-xl p-5 mb-6" id="healthCard">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+              <i class="fa fa-heartbeat text-danger mr-2"></i>网络健康评估
+            </h2>
+            <div class="flex flex-col md:flex-row gap-6">
+              <div class="flex-1">
+                <div class="text-5xl font-bold mb-2" id="score">0</div>
+                <div class="text-lg" id="riskLevel">安全评分</div>
+                <div class="w-full bg-gray-200 rounded-full h-4 mt-4">
+                  <div id="scoreBar" class="bg-success h-4 rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+              <div class="flex-1">
+                <h3 class="font-medium mb-2">风险因素</h3>
+                <ul id="riskFactors" class="text-gray-700 space-y-1">
+                  <li class="flex items-start">
+                    <i class="fa fa-check-circle text-success mt-1 mr-2"></i>
+                    <span>未检测到明显风险</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 页脚 -->
+    <footer class="mt-12 text-center text-gray-500 text-sm">
+      <p>© 2025 IP信息查询工具 | 数据仅供参考</p>
+    </footer>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const ipInput = document.getElementById('ipInput');
+      const checkBtn = document.getElementById('checkBtn');
+      const resultDiv = document.getElementById('result');
+      const errorDiv = document.getElementById('error');
+      const loadingDiv = document.getElementById('loading');
+      
+      // DOM元素
+      const ipElement = document.getElementById('ip');
+      const locationElement = document.getElementById('location');
+      const ispElement = document.getElementById('isp');
+      const asnElement = document.getElementById('asn');
+      const proxyElement = document.getElementById('proxy');
+      const userAgentElement = document.getElementById('userAgent');
+      const scoreElement = document.getElementById('score');
+      const riskLevelElement = document.getElementById('riskLevel');
+      const scoreBarElement = document.getElementById('scoreBar');
+      const riskFactorsElement = document.getElementById('riskFactors');
+      const healthCardElement = document.getElementById('healthCard');
+      
+      // 显示错误信息
+      function showError(message) {
+        errorDiv.textContent = message;
+        errorDiv.classList.remove('hidden');
+        resultDiv.classList.add('hidden');
+      }
+      
+      // 隐藏错误信息
+      function hideError() {
+        errorDiv.classList.add('hidden');
+      }
+      
+      // 显示加载状态
+      function showLoading() {
+        loadingDiv.classList.remove('hidden');
+        resultDiv.classList.add('hidden');
+      }
+      
+      // 隐藏加载状态
+      function hideLoading() {
+        loadingDiv.classList.add('hidden');
+      }
+      
+      // 显示结果
+      function showResults(data) {
+        resultDiv.classList.remove('hidden');
+        
+        // 填充IP信息
+        ipElement.textContent = data.ip;
+        locationElement.textContent = `${data.city}, ${data.region}, ${data.country}`;
+        ispElement.textContent = data.isp;
+        asnElement.textContent = data.asn;
+        userAgentElement.textContent = data.userAgent;
+        
+        // 显示代理/VPN状态
+        const isProxy = data.vpn || data.proxy || data.tor;
+        proxyElement.textContent = isProxy ? '是' : '否';
+        proxyElement.className = `font-medium ${isProxy ? 'text-danger' : 'text-success'}`;
+        
+        // 健康评分算法
+        const riskFactors = [];
+        let score = 100;
+        
+        if (data.vpn) {
+          riskFactors.push({ text: '检测到VPN使用', icon: 'shield' });
+          score -= 20;
+        }
+        
+        if (data.proxy) {
+          riskFactors.push({ text: '检测到代理服务器', icon: 'server' });
+          score -= 20;
+        }
+        
+        if (data.tor) {
+          riskFactors.push({ text: '检测到Tor网络使用', icon: 'lock' });
+          score -= 30;
+        }
+        
+        if (data.country && !['CN', 'HK', 'TW', 'MO'].includes(data.country)) {
+          riskFactors.push({ text: '境外IP地址', icon: 'globe' });
+          score -= 15;
+        }
+        
+        // 设置评分颜色和风险级别
+        let riskLevel, scoreColor, barColor;
+        if (score > 80) {
+          riskLevel = '安全';
+          scoreColor = 'text-success';
+          barColor = 'bg-success';
+        } else if (score > 60) {
+          riskLevel = '低风险';
+          scoreColor = 'text-green-500';
+          barColor = 'bg-green-500';
+        } else if (score > 40) {
+          riskLevel = '中等风险';
+          scoreColor = 'text-warning';
+          barColor = 'bg-warning';
+        } else {
+          riskLevel = '高风险';
+          scoreColor = 'text-danger';
+          barColor = 'bg-danger';
+        }
+        
+        // 更新评分UI
+        scoreElement.textContent = score;
+        scoreElement.className = `text-5xl font-bold mb-2 ${scoreColor}`;
+        riskLevelElement.textContent = `${riskLevel} (${score}/100)`;
+        riskLevelElement.className = `text-lg ${scoreColor}`;
+        scoreBarElement.className = `h-4 rounded-full ${barColor}`;
+        scoreBarElement.style.width = `${score}%`;
+        
+        // 更新风险因素列表
+        if (riskFactors.length > 0) {
+          riskFactorsElement.innerHTML = '';
+          riskFactors.forEach(factor => {
+            const li = document.createElement('li');
+            li.className = 'flex items-start';
+            li.innerHTML = `
+              <i class="fa fa-exclamation-triangle text-warning mt-1 mr-2"></i>
+              <span>${factor.text}</span>
+            `;
+            riskFactorsElement.appendChild(li);
+          });
+        } else {
+          riskFactorsElement.innerHTML = `
+            <li class="flex items-start">
+              <i class="fa fa-check-circle text-success mt-1 mr-2"></i>
+              <span>未检测到明显风险</span>
+            </li>
+          `;
+        }
+        
+        // 添加动画效果
+        healthCardElement.classList.add('animate-pulse');
+        setTimeout(() => {
+          healthCardElement.classList.remove('animate-pulse');
+        }, 1000);
+      }
+      
+      // 获取IP信息 - 更新API路径以适应Pages
+      async function fetchIpInfo(ip = '') {
+        try {
+          hideError();
+          showLoading();
+          
+          // 更新API路径，使用Pages函数路径
+          const endpoint = ip ? `/api/ip/${encodeURIComponent(ip)}` : '/api/ip';
+          const response = await fetch(endpoint);
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || '查询失败');
+          }
+          
+          return await response.json();
+        } catch (error) {
+          console.error('查询错误:', error);
+          showError(error.message);
+          throw error;
+        } finally {
+          hideLoading();
+        }
+      }
+      
+      // 处理查询按钮点击事件
+      checkBtn.addEventListener('click', async () => {
+        const ip = ipInput.value.trim();
+        
+        // 简单的IP验证
+        if (ip && !/^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ip)) {
+          showError('请输入有效的IPv4地址');
+          return;
+        }
+        
+        try {
+          const data = await fetchIpInfo(ip);
+          showResults(data);
+        } catch (error) {
+          // 错误已在fetchIpInfo中处理
+        }
+      });
+      
+      // 初始加载时查询本机IP
+      fetchIpInfo().then(showResults).catch(error => {
+        // 错误已在fetchIpInfo中处理
+      });
+      
+      // 添加回车键触发查询
+      ipInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') {
+          checkBtn.click();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
